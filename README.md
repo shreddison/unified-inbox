@@ -1,3 +1,21 @@
+# Unified Inbox — by Edison Lizano
+
+# Getting Started
+
+## Prerequisites
+- Node.js 18+
+- npm
+
+## Install dependencies
+```bash
+npm install
+```
+
+## Run the development server
+```bash
+npm run dev
+```
+
 ## Assumptions
 
 ### Users
