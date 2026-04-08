@@ -1,1 +1,29 @@
 @import "tailwindcss";
+
+/* Primitive tokens — raw brand palette */
+:root {
+  --ha-primitive-orange: #B94D00;
+  --ha-primitive-orange-vivid: #FD6300;
+  --ha-primitive-brown: #2D2926;
+  --ha-primitive-peach: #FFEADD;
+  --ha-primitive-offwhite: #F9F5EE;
+}
+
+/* Semantic tokens — intent-based aliases */
+:root {
+  --ha-color-primary: var(--ha-primitive-orange);
+  --ha-color-primary-hover: var(--ha-primitive-orange-vivid);
+  --ha-color-text: var(--ha-primitive-brown);
+  --ha-color-surface-subtle: var(--ha-primitive-peach);
+  --ha-color-background: var(--ha-primitive-offwhite);
+}
+
+/* Tailwind theme — maps utility classes to semantic tokens */
+@theme {
+  --color-ha-orange: var(--ha-color-primary);
+  --color-ha-orange-light: var(--ha-color-primary-hover);
+  --color-ha-brown: var(--ha-color-text);
+  --color-ha-peach: var(--ha-color-surface-subtle);
+  --color-ha-offwhite: var(--ha-color-background);
+  --font-sans: 'Montserrat', 'Lato', ui-sans-serif, system-ui, sans-serif;
+}

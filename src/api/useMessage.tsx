@@ -1,4 +1,3 @@
-// src/api/useMessage.ts
 import { useQuery } from '@tanstack/react-query'
 import type { MessageDetailResponse } from '../types'
 

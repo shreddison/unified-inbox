@@ -1,4 +1,3 @@
-// src/api/useMarkAsRead.ts
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 async function markAsRead(id: string): Promise<void> {
