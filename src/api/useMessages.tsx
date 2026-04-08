@@ -3,13 +3,11 @@ import type { MessagesResponse, Platform } from '../types'
 
 interface MessageFilters {
   platform?: Platform
-  unreadOnly?: boolean
 }
 
 async function fetchMessages(filters: MessageFilters): Promise<MessagesResponse> {
   const params = new URLSearchParams()
   if (filters.platform) params.set('platform', filters.platform)
-  if (filters.unreadOnly) params.set('unreadOnly', 'true')
 
   const res = await fetch(`/api/inbox/messages?${params}`)
   if (!res.ok) throw new Error('Failed to fetch messages')

@@ -1,36 +1,165 @@
-I'll use a BFF (Backend for Frontend) pattern with a single aggregation API. Here's my reasoning:
+# API Design
 
-The UI only needs to talk to one endpoint
-The BFF handles all the complexity of aggregating multiple platform APIs
-We can normalize data structures across platforms
-Easier to add new platforms without changing the frontend
+## Pattern: BFF (Backend for Frontend)
+
+Each platform (Airbnb, Booking.com, VRBO) has its own auth, rate limits, and data shape — the browser shouldn't deal with that complexity, and CORS makes direct calls impractical. The BFF normalises everything into one schema and exposes clean endpoints to the frontend. MSW simulates what that BFF would return.
+
+## Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/inbox/messages` | All messages. Supports `?platform=` `&unreadOnly=` |
+| GET | `/api/inbox/messages/:id` | Single message + property + booking in one response |
+| POST | `/api/inbox/messages/:id/read` | Mark message as read |
+
+The detail endpoint deliberately joins message + property + booking server-side — one round trip instead of three.
+
+## Data Shape
+```typescript
+interface Message {
+  id: string
+  platform: 'airbnb' | 'booking_com' | 'vrbo' | 'direct'
+  subject: string
+  preview: string
+  body: string
+  isRead: boolean
+  receivedAt: string        // ISO 8601
+  sender: { name: string }
+  propertyId: string
+  bookingId?: string        // not every message ties to a booking
+}
+
+interface Property {
+  id: string
+  name: string
+  address: string
+  imageUrl: string
+}
+
+interface Booking {
+  id: string
+  propertyId: string
+  guestName: string
+  checkIn: string           // ISO 8601
+  checkOut: string          // ISO 8601
+  nights: number
+  status: 'confirmed' | 'pending' | 'cancelled'
+  totalAmount: number
+  currency: string
+}
+```
+
+## In Production
+
+The BFF would fan out to each platform's API in parallel, normalise responses into the schema above, and push new messages to the client via WebSocket or SSE. Authentication, rate limiting, and per-platform error handling would all live in the BFF — invisible to the frontend.
 
 
 
-Desisions
-I chose Vite for MVP simplicity; migrating to Next.js App Router would be straightforward and worthwhile if server components, auth middleware, or SSR for initial load performance become requirements."
 
-Tech Stack Choices
+# Implementation
 
-React + TypeScript + Vite — fast dev server, first-class TS, industry standard
-TanStack Query — server state, caching, loading/error states for free
-Tailwind CSS — Paid version with templates utility-first, fast to iterate on design without a component library getting in the way
-Mock Service Worker (MSW) — mocks at the network layer, so the code is identical to production
+I chose Vite for MVP simplicity; migrating to Next.js App Router would be straightforward and worthwhile if server components, auth middleware, or SSR for initial load performance become requirements.
 
-LIMITATIONS
-The BFF is mokecd using MSW
-No SSR
-No Mobile version
+## Tech Stack
+
+| Tool | Why |
+|------|-----|
+| React + TypeScript + Vite | Fast dev server, first-class TS, industry standard |
+| TanStack Query | Server state, caching, and loading/error states with minimal boilerplate |
+| Tailwind CSS | Utility-first, fast to iterate on design without a component library getting in the way |
+| MSW (Mock Service Worker) | Mocks at the network layer — fetch calls are identical to what production would look like |
+
+## Structure
+```
+src/
+  api/          → typed query hooks (useMessages, useMessage, useMarkAsRead)
+  mocks/        → MSW handlers + fixture data for messages, properties, bookings
+  components/   → MessageList, MessageDetail, PlatformBadge, skeletons
+  pages/        → InboxPage
+  types/        → shared TypeScript interfaces
+```
+
+## Data Flow
+```
+InboxPage
+├── useMessages()        → GET /api/inbox/messages
+├── useMessage(id)       → GET /api/inbox/messages/:id
+├── useMarkAsRead()      → POST /api/inbox/messages/:id/read
+│
+├── MessageList          → renders list, fires onSelect
+└── MessageDetail        → renders message + property + booking
+```
+
+MSW intercepts all fetch calls in development. Swapping in a real API requires only removing the MSW initialiser in `main.tsx` — no changes to hooks or components.
+
+## Limitations
+
+- BFF is mocked via MSW — no real platform integrations
+- No SSR — initial load fetches data client-side
+- No mobile layout — optimised for desktop two-panel view
+- No authentication
 
 
-STEPS
-- Define the minimum domain, normalized schemas
-- MSW setup mock data and handlers before touching any UI
-- Create a Inbox List Page, MessageList and Message Detail Components
-- Use the hooks to display data from msw
 
+# Development Steps
 
-Prompt 
-- create src/types/index.ts with interfaces for Property, Booking, Message, use generic fields in each, normalized schemas
-- Create base implementation of msw, route handlers and data for messages, properties and bookings
-- Create a base hook layer in src/api Using TanStack Query. useMessage (list with optional filters) and useMessages (single message + property + booking) create mutation useMarkAsRead and wire up the client  QueryClient
+## 1. Define the Domain Schema
+Started by defining the normalised TypeScript interfaces (`Message`, `Property`, `Booking`) before writing any component or fetch logic. The schema is the contract everything else builds toward — getting this right first prevents refactoring later.
+
+## 2. Mock the BFF with MSW
+Built fixture data and MSW handlers before touching any UI. This means the frontend always fetches from a real network request — no `if (isDev)` branches in components, no hardcoded arrays passed as props. The code is identical to what production would look like.
+
+## 3. Build the Inbox Layout
+Created `InboxPage` as the single data-owning component with a two-panel layout — message list on the left, detail on the right. `selectedId` state lives here and is passed down, keeping both panels in sync without a global store.
+
+## 4. MessageList and MessageDetail Components
+Both components are purely presentational — they receive data as props and have no knowledge of how it was fetched. Loading and error states are handled in `InboxPage` before the return, so `messagesData` is always defined when passed down.
+
+## 5. TanStack Query Hooks
+Three hooks cover the full data layer:
+
+| Hook | Endpoint |
+|------|----------|
+| `useMessages(filters)` | `GET /api/inbox/messages` |
+| `useMessage(id)` | `GET /api/inbox/messages/:id` |
+| `useMarkAsRead()` | `POST /api/inbox/messages/:id/read` |
+
+`useMarkAsRead` invalidates both `['messages']` and `['message', id]` on success — the list unread count and detail view stay in sync automatically without manual state updates. This is the core value of TanStack Query's cache invalidation pattern.
+
+# AI-Assisted Development
+
+Used Claude (Anthropic) throughout the implementation as a collaborator — not to generate code blindly, but to accelerate boilerplate. All outputs were reviewed and adapted.
+
+### Prompts
+
+**1. Domain schema**
+```
+Create src/types/index.ts with TypeScript interfaces for Property, Booking, and Message.
+Use normalised schemas — no nested duplicated data, foreign keys only (propertyId, bookingId).
+Platform should be a union type.
+```
+
+**2. MSW setup**
+```
+Create a base MSW implementation with:
+- src/mocks/data/ fixture files for messages (7+), properties (3), bookings (3)
+- src/mocks/handlers.ts with route handlers for:
+    GET  /api/inbox/messages       (supports for platform filter)
+    GET  /api/inbox/messages/:id   (returns message + joined property + booking)
+    POST /api/inbox/messages/:id/read
+- Add realistic delay() to each handler to simulate network latency
+```
+
+**3. TanStack Query hook layer**
+```
+Create a hook layer in src/api/ using TanStack Query v5:
+- useMessages(filters)   → GET /api/inbox/messages, queryKey includes filters for cache isolation
+- useMessage(id)         → GET /api/inbox/messages/:id, enabled only when id is defined
+- useMarkAsRead()        → POST mutation, on success invalidate ['messages'] and ['message', id]
+Wire up QueryClient in main.tsx
+```
+
+### What was validated manually
+- MSW handler query param parsing and filter logic
+- Cache invalidation behaviour after markAsRead
+- TypeScript types across the hook/component boundary
