@@ -66,7 +66,11 @@ export default function InboxPage() {
                 <p className="text-sm text-red-500">Error loading message detail.</p>
               )}
               {!isLoadingMessageDetail && (
-                <MessageDetail message={messageDetailData?.message} />
+                <MessageDetail
+                  message={messageDetailData?.message}
+                  property={messageDetailData?.property}
+                  booking={messageDetailData?.booking}
+                />
               )}
             </div>
           </div>

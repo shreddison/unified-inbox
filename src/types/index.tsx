@@ -1,7 +1,13 @@
-
 // src/types/index.ts
 
-export type Platform = 'airbnb' | 'booking_com' | 'expedia' | 'tripadvisor' 
+export type Platform = 'airbnb' | 'booking_com' | 'expedia' | 'tripadvisor'
+
+export type BookingStatus = 'confirmed' | 'pending' | 'cancelled'
+
+export interface Sender {
+  name: string
+  avatarUrl?: string
+}
 
 export interface Property {
   id: string
@@ -18,7 +24,7 @@ export interface Booking {
   checkOut: string
   nights: number
   totalGuests: number
-  status: 'confirmed' | 'pending' | 'cancelled'
+  status: BookingStatus
   totalAmount: number
   currency: string
 }
@@ -28,11 +34,10 @@ export interface Message {
   platform: Platform
   platformMessageId: string
   subject: string
-  preview: string
   body: string
   isRead: boolean
   receivedAt: string
-  sender: { name: string; avatarUrl?: string }
+  sender: Sender
   propertyId: string
   bookingId?: string
 }
@@ -40,11 +45,10 @@ export interface Message {
 // API response shapes
 export interface MessagesResponse {
   data: Message[]
-  total: number
 }
 
 export interface MessageDetailResponse {
   message: Message
-  property: Property
+  property?: Property
   booking?: Booking
 }

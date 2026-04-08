@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useMarkAsRead } from '../api/useMarkAsRead'
-import type { Message, Platform } from '../types'
+import type { Message, Property, Booking, Platform } from '../types'
 
 const PLATFORM_BADGE: Record<Platform, { label: string; className: string }> = {
   airbnb:      { label: 'Airbnb',      className: 'bg-rose-50 text-rose-600' },
@@ -9,11 +9,19 @@ const PLATFORM_BADGE: Record<Platform, { label: string; className: string }> = {
   tripadvisor: { label: 'Tripadvisor', className: 'bg-green-50 text-green-700' },
 }
 
-interface MessageDetailProps {
-  message?: Message
+const BOOKING_STATUS: Record<string, string> = {
+  confirmed: 'bg-green-50 text-green-700',
+  pending:   'bg-yellow-50 text-yellow-700',
+  cancelled: 'bg-red-50 text-red-600',
 }
 
-export default function MessageDetail({ message }: MessageDetailProps) {
+interface MessageDetailProps {
+  message?: Message
+  property?: Property
+  booking?: Booking
+}
+
+export default function MessageDetail({ message, property, booking }: MessageDetailProps) {
   const [reply, setReply] = useState('')
   const { mutate: markAsRead } = useMarkAsRead()
 
@@ -21,10 +29,12 @@ export default function MessageDetail({ message }: MessageDetailProps) {
     if (message && !message.isRead) markAsRead(message.id)
   }, [message?.id])
 
-  if (!message) return <p className="text-sm text-gray-500 dark:text-gray-400">Select a message to view details.</p>
+  if (!message) return <p className="text-sm text-gray-500">Select a message to view details.</p>
 
   return (
     <div className="flex flex-col gap-4 h-full">
+
+      {/* Sender header */}
       <div className="flex items-center gap-x-3">
         {message.sender.avatarUrl ? (
           <img
@@ -40,8 +50,8 @@ export default function MessageDetail({ message }: MessageDetailProps) {
           </div>
         )}
         <div>
-          <p className="text-sm font-semibold text-gray-900 dark:text-white">{message.sender.name}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+          <p className="text-sm font-semibold text-ha-brown">{message.sender.name}</p>
+          <p className="text-xs text-gray-500">
             <time dateTime={message.receivedAt}>
               {new Date(message.receivedAt).toLocaleString()}
             </time>
@@ -52,15 +62,58 @@ export default function MessageDetail({ message }: MessageDetailProps) {
         </span>
       </div>
 
+      {/* Subject */}
       <div className="border-l-2 border-ha-orange pl-3">
         <p className="text-base font-semibold text-ha-brown">{message.subject}</p>
       </div>
 
-<div>
+      {/* Message body */}
+      <div>
         <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Message</p>
         <p className="mt-1 text-sm/6 text-ha-brown whitespace-pre-wrap">{message.body}</p>
       </div>
 
+      {/* Property */}
+      {property && (
+        <div className="py-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Property</p>
+          <div className="mt-2 flex items-center gap-x-3">
+            {property.imageUrl && (
+              <img src={property.imageUrl} alt="" className="size-10 flex-none rounded-md object-cover" />
+            )}
+            <div>
+              <p className="text-sm font-semibold text-ha-brown">{property.name}</p>
+              <p className="text-xs text-gray-500">{property.address}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Booking */}
+      {booking && (
+        <div className="py-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Booking</p>
+          <div className="mt-2 flex items-start justify-between gap-x-4">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-ha-brown">{booking.guestName}</p>
+              <p className="text-xs text-gray-500">
+                {new Date(booking.checkIn).toLocaleDateString()} — {new Date(booking.checkOut).toLocaleDateString()}
+                <span className="ml-1 text-gray-400">({booking.nights}n · {booking.totalGuests} guests)</span>
+              </p>
+            </div>
+            <div className="flex flex-col items-end gap-1">
+              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${BOOKING_STATUS[booking.status]}`}>
+                {booking.status}
+              </span>
+              <p className="text-xs font-semibold text-ha-brown">
+                {booking.totalAmount.toLocaleString()} {booking.currency}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reply */}
       <div className="mt-auto">
         <textarea
           value={reply}
