@@ -1,38 +1,21 @@
-import { useState, useEffect } from 'react'
-import { useMarkAsRead } from '../api/useMarkAsRead'
-import type { Message, Property, Booking, Platform } from '../types'
+import type { Message, Property, Booking, BookingStatus } from '../types'
+import { PLATFORM_BADGE } from '../utils/platform'
 
-const PLATFORM_BADGE: Record<Platform, { label: string; className: string }> = {
-  airbnb:      { label: 'Airbnb',      className: 'bg-rose-50 text-rose-600' },
-  booking_com: { label: 'Booking.com', className: 'bg-blue-50 text-blue-600' },
-  expedia:     { label: 'Expedia',     className: 'bg-yellow-50 text-yellow-700' },
-  tripadvisor: { label: 'Tripadvisor', className: 'bg-green-50 text-green-700' },
-}
-
-const BOOKING_STATUS: Record<string, string> = {
+const BOOKING_STATUS: Record<BookingStatus, string> = {
   confirmed: 'bg-green-50 text-green-700',
   pending:   'bg-yellow-50 text-yellow-700',
   cancelled: 'bg-red-50 text-red-600',
 }
 
 interface MessageDetailProps {
-  message?: Message
+  message: Message
   property?: Property
   booking?: Booking
 }
 
 export default function MessageDetail({ message, property, booking }: MessageDetailProps) {
-  const [reply, setReply] = useState('')
-  const { mutate: markAsRead } = useMarkAsRead()
-
-  useEffect(() => {
-    if (message && !message.isRead) markAsRead(message.id)
-  }, [message?.id])
-
-  if (!message) return <p className="text-sm text-gray-500">Select a message to view details.</p>
-
   return (
-    <div className="flex flex-col gap-4 h-full">
+    <div className="flex flex-col gap-4">
 
       {/* Sender header */}
       <div className="flex items-center gap-x-3">
@@ -112,26 +95,6 @@ export default function MessageDetail({ message, property, booking }: MessageDet
           </div>
         </div>
       )}
-
-      {/* Reply */}
-      <div className="mt-auto">
-        <textarea
-          value={reply}
-          onChange={(e) => setReply(e.target.value)}
-          rows={4}
-          placeholder="Write a reply…"
-          className="w-full rounded-lg border border-gray-200 bg-ha-offwhite px-3 py-2 text-sm text-ha-brown placeholder-gray-400 focus:border-ha-orange focus:ring-1 focus:ring-ha-orange outline-none transition-colors"
-        />
-        <div className="mt-2 flex justify-end">
-          <button
-            type="button"
-            disabled={!reply.trim()}
-            className="rounded-md bg-ha-orange px-4 py-2 text-sm font-semibold text-white hover:bg-ha-orange-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Reply
-          </button>
-        </div>
-      </div>
     </div>
   )
 }

@@ -14,7 +14,7 @@ async function enableMocking() {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30_000,      // treat data as fresh for 30s
+      staleTime: 30_000,
       retry: 1,
     },
   },

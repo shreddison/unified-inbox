@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import type { MessageDetailResponse } from '../types'
+import { queryKeys } from './queryKeys'
 
 async function fetchMessage(id: string): Promise<MessageDetailResponse> {
   const res = await fetch(`/api/inbox/messages/${id}`)
@@ -9,8 +10,8 @@ async function fetchMessage(id: string): Promise<MessageDetailResponse> {
 
 export function useMessage(id: string | undefined) {
   return useQuery({
-    queryKey: ['message', id],
-    queryFn: () => fetchMessage(id!),
+    queryKey: queryKeys.message(id),
+    queryFn: () => fetchMessage(id as string),
     enabled: !!id,   // don't fire if id is undefined
   })
 }

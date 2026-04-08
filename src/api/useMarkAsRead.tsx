@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from './queryKeys'
 
 async function markAsRead(id: string): Promise<void> {
   const res = await fetch(`/api/inbox/messages/${id}/read`, { method: 'POST' })
@@ -12,8 +13,8 @@ export function useMarkAsRead() {
     mutationFn: markAsRead,
     onSuccess: (_, id) => {
       // Invalidate both the list and the detail cache
-      queryClient.invalidateQueries({ queryKey: ['messages'] })
-      queryClient.invalidateQueries({ queryKey: ['message', id] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.messages() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.message(id) })
     },
   })
 }

@@ -1,9 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import type { MessagesResponse, Platform } from '../types'
-
-interface MessageFilters {
-  platform?: Platform
-}
+import type { MessagesResponse } from '../types'
+import { queryKeys } from './queryKeys'
+import type { MessageFilters } from './types'
 
 async function fetchMessages(filters: MessageFilters): Promise<MessagesResponse> {
   const params = new URLSearchParams()
@@ -16,7 +14,8 @@ async function fetchMessages(filters: MessageFilters): Promise<MessagesResponse>
 
 export function useMessages(filters: MessageFilters = {}) {
   return useQuery({
-    queryKey: ['messages', filters],
+    queryKey: queryKeys.messages(filters),
     queryFn: () => fetchMessages(filters),
+    select: (res) => res.data,
   })
 }
